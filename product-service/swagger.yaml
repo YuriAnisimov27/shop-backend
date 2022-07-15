@@ -1,0 +1,94 @@
+swagger: '2.0'
+info:
+  version: 1.0.0
+  title: DucatiAPI
+  description: product-service
+basePath: /dev
+schemes:
+  - https
+consumes:
+  - application/json
+produces:
+  - application/json
+paths:
+  /products:
+    get:
+      description: Returns all motorcycles from the list
+      produces:
+        - application/json
+      summary: 'Products List'
+      responses:
+        200:
+          description: Returns Products List
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Motorcycle'
+        500:
+          description: Internal Error
+          schema:
+            $ref: '#/definitions/Error'
+
+  /products/{id}:
+    get:
+      description: Returns a product by id
+      operationId: find product by id
+      parameters:
+        - name: id
+          in: path
+          description: ID of product to fetch
+          required: true
+          type: integer
+          format: int64
+      responses:
+        200:
+          description: product response
+          schema:
+            $ref: '#/definitions/Motorcycle'
+        404:
+          description: product not found
+        500:
+          description: Internal Error
+          schema:
+            $ref: '#/definitions/Error'
+
+definitions:
+  Motorcycle:
+    allOf:
+      - $ref: '#/definitions/NewMotorcycle'
+      - required:
+          - id
+        type: 'object'
+        properties:
+          id:
+            type: string
+
+  NewMotorcycle:
+    type: 'object'
+    required:
+      - name
+    properties:
+      title:
+        type: string
+      description:
+        type: string
+      count:
+        type: integer
+      price:
+        type: integer
+      imgUrl:
+        type: string
+      id:
+        type: string
+
+  Error:
+    type: 'object'
+    required:
+      - code
+      - message
+    properties:
+      code:
+        type: integer
+        format: int32
+      message:
+        type: string
