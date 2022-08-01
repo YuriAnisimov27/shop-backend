@@ -1,5 +1,5 @@
 export interface LambdaResponseSerialized {
-  statusCode: 200 | 400 | 403 | 404 | 500;
+  statusCode: 200 | 201 | 400 | 403 | 404 | 500;
   body: object | string;
   headers?: Record<string, string>;
 }
@@ -13,9 +13,10 @@ const corsHeaders = {
 
 export const buildSuccessResponse = (
   body: object,
+  statusCode: LambdaResponseSerialized['statusCode'] = 200,
   headers?: Record<string, string>
 ): LambdaResponseSerialized => ({
-  statusCode: 200,
+  statusCode,
   body: JSON.stringify(body),
   headers: {
     ...headers,
