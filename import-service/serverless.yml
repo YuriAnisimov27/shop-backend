@@ -24,6 +24,28 @@ provider:
         - 's3:*'
       Resource:
         - 'arn:aws:s3:::import-service-ducati-shop/*'
+    - Effect: 'Allow'
+      Action:
+        - 'sqs:*'
+      Resource:
+        - Fn::GetAtt: [SQSQueue, Arn]
+  environment:
+    SQS_URL:
+      Ref: SQSQueue
+
+resources:
+  Resources:
+    SQSQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: catalogItemsQueue
+  Outputs:
+    SQSQueueArn:
+      Value:
+        Fn::GetAtt: [SQSQueue, Arn]
+    SQSQueue:
+      Value:
+        Ref: SQSQueue
 
 functions:
   importProductsFile:

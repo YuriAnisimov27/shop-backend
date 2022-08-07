@@ -1,5 +1,4 @@
 import AWS from 'aws-sdk';
-import dotenv from 'dotenv';
 import { APIGatewayProxyEvent } from 'aws-lambda';
 
 import {
@@ -8,9 +7,9 @@ import {
   LambdaResponseSerialized,
 } from '../../utils/responses';
 import { logger } from '../../utils/logger';
+import { config } from 'src/utils/config';
 
-dotenv.config();
-const BUCKET = process.env.BUCKET || 'import-service-ducati-shop';
+const BUCKET = config.BUCKET;
 
 export const importProductsFile = async (
   event: APIGatewayProxyEvent

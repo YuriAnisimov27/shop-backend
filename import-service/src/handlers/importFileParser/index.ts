@@ -2,10 +2,12 @@ import AWS from 'aws-sdk';
 import { S3Event } from 'aws-lambda';
 import csv from 'csv-parser';
 
-import { logger } from '../../utils/logger';
+import { logger } from 'src/utils/logger';
+import { config } from 'src/utils/config';
 
 export const importFileParser = async (event: S3Event): Promise<void> => {
   const s3 = new AWS.S3({ signatureVersion: 'v4', region: 'us-east-1' });
+  const sqs = new AWS.SQS();
   logger.info('Importing file parser...');
 
   try {
@@ -18,7 +20,7 @@ export const importFileParser = async (event: S3Event): Promise<void> => {
         Key: key,
       };
 
-      logger.info(`CHECK PARAMS  ${params}`);
+      logger.info(`params ${JSON.stringify(params)}`);
 
       await new Promise((resolve, reject) => {
         s3.getObject(params)
@@ -26,6 +28,25 @@ export const importFileParser = async (event: S3Event): Promise<void> => {
           .pipe(csv())
           .on('data', (data) => {
             logger.info(`Data file:  ${JSON.stringify(data)}`);
+            const QueueUrl = config.SQS_URL;
+            if (!QueueUrl) {
+              logger.error('QueueUrl is not defined');
+              throw new Error('QueueUrl is not defined');
+            }
+
+            sqs.sendMessage(
+              {
+                QueueUrl,
+                MessageBody: JSON.stringify(data),
+              },
+              (error) => {
+                if (error) {
+                  logger.error(`Error sending message: ${error}`);
+                } else {
+                  logger.info(`Message sent to SQS: ${JSON.stringify(data)}`);
+                }
+              }
+            );
           })
           .on('error', (err) => {
             logger.info(`Error file:  ${err}`);
