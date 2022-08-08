@@ -34,7 +34,7 @@ export const catalogBatchProcess = async (
         `Creating product: title: ${title}, description: ${description}, price: ${price}, imgUrl: ${imgUrl}, count: ${count}`
       );
 
-      const data = validation(title, description, price, imgUrl, count);
+      const data = validation(title, description, +price, imgUrl, +count);
 
       if (data instanceof Error) {
         logger.error(`Error validating product: ${data.message}`);
