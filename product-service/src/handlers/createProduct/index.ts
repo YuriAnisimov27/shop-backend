@@ -3,13 +3,13 @@ import { Pool } from 'pg';
 import { v4 } from 'uuid';
 
 import { logger } from 'src/utils/logger';
-import { dbOptions } from '../../utils/dbConnection';
+import { dbOptions } from 'src/utils/dbConnection';
 import {
   buildResponseFailure,
   buildSuccessResponse,
   LambdaResponseSerialized,
-} from '../../utils/responses';
-import { validation } from '../../utils/validation';
+} from 'src/utils/responses';
+import { validation } from 'src/utils/validation';
 
 const pool = new Pool(dbOptions);
 
@@ -36,10 +36,7 @@ export const createProduct = async (
   const client = await pool.connect();
   logger.info('Connected to database');
 
-  await client.connect().catch((err) => {
-    logger.error(`Error connecting to database: ${err.message}`);
-    return buildResponseFailure(500, err);
-  });
+  await client.connect();
 
   try {
     await client.query('BEGIN').then(() => logger.info('Transaction started'));
