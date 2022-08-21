@@ -1,0 +1,5 @@
+.serverless
+node_modules
+swagger
+.env
+.DS_Store

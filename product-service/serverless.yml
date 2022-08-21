@@ -4,15 +4,58 @@ service: ducati-product-service
 plugins:
   - serverless-bundle
   - serverless-dotenv-plugin
-  # - serverless-auto-swagger
   - serverless-offline
 
 provider:
   name: aws
   runtime: nodejs14.x
-  region: eu-west-1
-  # region: us-east-1
+  # region: eu-west-1
+  region: us-east-1
   lambdaHashingVersion: 20201221
+
+  iamRoleStatements:
+    - Effect: 'Allow'
+      Action:
+        - 'sqs:*'
+      Resource:
+        - '${cf:import-service-ducati-shop-dev.SQSQueueArn}'
+    - Effect: 'Allow'
+      Action:
+        - 'sns:*'
+      Resource:
+        Ref: SNSTopic
+
+  environment:
+    SNS_ARN:
+      Ref: SNSTopic
+
+resources:
+  Resources:
+    SNSTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: createProductTopic
+
+    SNSSubscriptionPrimary:
+      Type: AWS::SNS::Subscription
+      Properties:
+        Endpoint: yurianisimov27@gmail.com
+        Protocol: email
+        TopicArn:
+          Ref: SNSTopic
+        FilterPolicy:
+          count:
+            - hugeImport
+    SNSSubscriptionSecondary:
+      Type: AWS::SNS::Subscription
+      Properties:
+        Endpoint: yury_anisimau@epam.com
+        Protocol: email
+        TopicArn:
+          Ref: SNSTopic
+        FilterPolicy:
+          count:
+            - smallImport
 
 functions:
   createProduct:
@@ -38,3 +81,11 @@ functions:
           path: /products/{id}
           method: get
           cors: true
+
+  catalogBatchProcess:
+    handler: src/handlers/handlers.catalogBatchProcess
+    events:
+      - sqs:
+          batchSize: 5
+          arn:
+            - '${cf:import-service-ducati-shop-dev.SQSQueueArn}'

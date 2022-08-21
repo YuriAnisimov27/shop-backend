@@ -1,0 +1,99 @@
+frameworkVersion: '2'
+service: import-service-ducati-shop
+
+plugins:
+  - serverless-bundle
+  - serverless-dotenv-plugin
+  - serverless-offline
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+  # region: eu-west-1
+  region: us-east-1
+  lambdaHashingVersion: 20201221
+
+  iamRoleStatements:
+    - Effect: 'Allow'
+      Action:
+        - 's3:ListBucket'
+      Resource:
+        - 'arn:aws:s3:::import-service-ducati-shop'
+    - Effect: 'Allow'
+      Action:
+        - 's3:*'
+      Resource:
+        - 'arn:aws:s3:::import-service-ducati-shop/*'
+    - Effect: 'Allow'
+      Action:
+        - 'sqs:*'
+      Resource:
+        - Fn::GetAtt: [SQSQueue, Arn]
+  environment:
+    SQS_URL:
+      Ref: SQSQueue
+
+resources:
+  Resources:
+    SQSQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: catalogItemsQueue
+
+    GatewayResponseAccessDenied:
+      Type: 'AWS::ApiGateway::GatewayResponse'
+      Properties:
+        ResponseType: ACCESS_DENIED
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'*'"
+        RestApiId:
+          Ref: 'ApiGatewayRestApi'
+
+    GatewayResponseDefault4XX:
+      Type: 'AWS::ApiGateway::GatewayResponse'
+      Properties:
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Credentials: "'true'"
+        ResponseType: DEFAULT_4XX
+        RestApiId:
+          Ref: 'ApiGatewayRestApi'
+
+  Outputs:
+    SQSQueueArn:
+      Value:
+        Fn::GetAtt: [SQSQueue, Arn]
+    SQSQueue:
+      Value:
+        Ref: SQSQueue
+
+functions:
+  importProductsFile:
+    handler: src/handlers/handlers.importProductsFile
+    events:
+      - http:
+          path: /import
+          method: get
+          cors: true
+          request:
+            parameters:
+              querystrings:
+                name: true
+          authorizer:
+            name: tokenAuthorizer
+            arn: '${cf:authorization-service-${self:provider.stage}.basicAuthorizerArn}'
+            resultTtlInSeconds: 0
+            identitySource: method.request.header.Authorization
+            type: token
+
+  importFileParser:
+    handler: src/handlers/handlers.importFileParser
+    events:
+      - s3:
+          bucket: import-service-ducati-shop
+          event: 's3:ObjectCreated:*'
+          existing: true
+          rules:
+            - prefix: uploaded/
